@@ -1,28 +1,17 @@
 import argparse
 import os
 import platform
-import sys
 import time
-from glob import glob
 
-import numpy as np
 import torch
-from tqdm import tqdm
-import natsort
-
-from detector.apis import get_detector
-from trackers.tracker_api import Tracker
-from trackers.tracker_cfg import cfg as tcfg
-from trackers import track
 from alphapose.models import builder
 from alphapose.utils.config import update_config
 from alphapose.utils.detector import DetectionLoader
-from alphapose.utils.file_detector import FileDetectionLoader
 from alphapose.utils.transforms import flip, flip_heatmap
-from alphapose.utils.vis import getTime
-from alphapose.utils.webcam_detector import WebCamDetectionLoader
-from alphapose.utils.writer import DataWriter
 from alphapose.utils.writer import DEFAULT_VIDEO_SAVE_OPT as video_save_opt
+from alphapose.utils.writer import DataWriter
+from detector.apis import get_detector
+from tqdm import tqdm
 
 CFG = 'configs/halpe_26/resnet/256x192_res50_lr1e-3_1x.yaml'
 CHECKPOINT = 'pretrained_models/halpe26_fast_res50_256x192.pth'
@@ -30,9 +19,9 @@ CHECKPOINT = 'pretrained_models/halpe26_fast_res50_256x192.pth'
 
 def get_parser():
     parser = argparse.ArgumentParser(description='AlphaPose Demo')
-    parser.add_argument('--cfg', type=str, required=True,
+    parser.add_argument('--cfg', type=str, required=False,
                         help='experiment configure file name')
-    parser.add_argument('--checkpoint', type=str, required=True,
+    parser.add_argument('--checkpoint', type=str, required=False,
                         help='checkpoint file name')
     parser.add_argument('--sp', default=False, action='store_true',
                         help='Use single process for pytorch')
@@ -120,6 +109,8 @@ def parse(video_name):
     args.cfg = CFG
     args.checkpoint = CHECKPOINT
     args.device = 'cuda'
+    args.outputpath = './output'
+    args.gpus = [0]
     args.detbatch = args.detbatch * len(args.gpus)
     args.posebatch = args.posebatch * len(args.gpus)
     args.tracking = args.pose_track or args.pose_flow or args.detector == 'tracker'
