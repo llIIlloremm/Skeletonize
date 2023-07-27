@@ -2,6 +2,7 @@ import argparse
 import os
 import platform
 import time
+from pathlib import Path
 
 import torch
 from alphapose.models import builder
@@ -14,7 +15,7 @@ from detector.apis import get_detector
 from tqdm import tqdm
 
 CFG = 'configs/halpe_26/resnet/256x192_res50_lr1e-3_1x.yaml'
-CHECKPOINT = 'pretrained_models/halpe26_fast_res50_256x192.pth'
+CHECKPOINT = 'pretrained_models/pose2d/halpe26_fast_res50_256x192.pth'
 
 
 def get_parser():
@@ -55,7 +56,7 @@ def get_parser():
                         help='pose estimation maximum batch size PER GPU')
     parser.add_argument('--eval', dest='eval', default=False, action='store_true',
                         help='save the result json as coco format, using image index(int) instead of image name(str)')
-    parser.add_argument('--gpus', type=str, dest='gpus', default="0",
+    parser.add_argument('--gpus', type=int, dest='gpus', default=[0],
                         help='choose which cuda device to use by index and input comma to use multi gpus, e.g. 0,1,2,3. (input -1 for cpu only)')
     parser.add_argument('--qsize', type=int, dest='qsize', default=1024,
                         help='the length of result buffer, where reducing it will lower requirement of cpu memory')
@@ -69,9 +70,9 @@ def get_parser():
     parser.add_argument('--webcam', dest='webcam', type=int,
                         help='webcam number', default=-1)
     parser.add_argument('--save_video', dest='save_video',
-                        help='whether to save rendered video', default=False, action='store_true')
+                        help='whether to save rendered video', default=True, action='store_true')
     parser.add_argument('--vis_fast', dest='vis_fast',
-                        help='use fast rendering', action='store_true', default=False)
+                        help='use fast rendering', action='store_true', default=True)
     """----------------------------- Tracking options -----------------------------"""
     parser.add_argument('--pose_flow', dest='pose_flow',
                         help='track humans in video with PoseFlow', action='store_true', default=False)
@@ -98,7 +99,9 @@ def loop():
         n += 1
 
 
-def parse(video_name):
+def run_2d_pose(video_name):
+    video_name_stem = Path(video_name).stem
+
     args = get_parser()
     cfg = update_config(CFG)
 
@@ -108,12 +111,14 @@ def parse(video_name):
     args.video = video_name
     args.cfg = CFG
     args.checkpoint = CHECKPOINT
+    args.outputpath = f'output/{video_name_stem}/'
     args.device = 'cuda'
-    args.outputpath = './output'
-    args.gpus = [0]
     args.detbatch = args.detbatch * len(args.gpus)
     args.posebatch = args.posebatch * len(args.gpus)
     args.tracking = args.pose_track or args.pose_flow or args.detector == 'tracker'
+
+    if not os.path.exists(args.outputpath):
+        os.mkdir(args.outputpath)
 
     det_loader = DetectionLoader(video_name, get_detector(args), cfg, args, batchSize=args.detbatch, mode='video',
                                  queueSize=args.qsize)
@@ -200,8 +205,10 @@ def parse(video_name):
             writer.clear_queues()
             det_loader.clear_queues()
 
+    return f'output/{video_name_stem}/AlphaPose_{video_name_stem}.mp4'
+
 
 if __name__ == '__main__':
     video_name = './videos/kunkun_cut.mp4'
-    json_file = parse(video_name)
+    run_2d_pose(video_name)
     # TODO: where is json?

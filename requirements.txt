@@ -1,5 +1,5 @@
 setuptools~=68.0.0
-numpy~=1.19.5
+numpy~=1.24.0
 opencv-python~=4.7.0.72
 matplotlib~=3.6.3
 scipy~=1.10.1
@@ -15,4 +15,15 @@ six~=1.16.0
 timm~=0.1.20
 cython~=0.29.35
 munkres~=1.1.4
+imageio~=2.31.1
+ipdb~=0.13.13
 -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox
+prettytable
+chumpy
+opencv-python
+imageio-ffmpeg
+roma
+ipdb
+gradio
+pytorch-metric-learning                         # For one-shot action recognition
+smplx[all]                                      # For mesh recovery
